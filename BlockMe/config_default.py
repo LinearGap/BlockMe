@@ -1,15 +1,13 @@
-{
+config = """{
   
-  "last_state": "None",
+  "last_state": 0,
   "redirect_addr": "127.0.0.1",
   "scheduler_pid": -1,
   
   "permanent_urls": [
-    ""
   ],
   
   "scheduled_urls": [
-    {"url": "", "start_time": "0000", "end_time": "0000"}
   ]
   
-}
+}"""

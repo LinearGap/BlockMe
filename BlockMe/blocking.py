@@ -38,6 +38,28 @@ class blocking():
 
 
         return domain
+
+    def __check_valid_ip(self, addr: str):
+        """
+        Checks if the addr supplied string is a valid ip address
+        """
+        octets = addr.split('.')
+        if len(octets) != 4:
+            return False
+
+        for octet in octets:
+            if not octet.isdigit():
+                return False
+            if int(octet) < 0 or int(octet) > 254:
+                return False
+        
+        return True
+
+    def __set_redirect_addr(self, addr: str):
+        """
+        Set a new redirect ip address in the hosts system
+        """
+        self.__hosts.redirect_ip_addr = addr
  
 ### Public API
     def add_site(self, site_url):
@@ -99,6 +121,14 @@ class blocking():
         operating now
         """
         return self.__hosts.query()
+
+    def set_redirect_address(self, addr: str):
+        """
+        Sets the redirection address to the supplied addr after checking if it
+        is a valid ip address
+        """
+        if self.__check_valid_ip(addr):
+            self.__set_redirect_addr(addr)
 
     ## TO_DO
     def query_scheduled(self):
