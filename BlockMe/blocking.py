@@ -9,6 +9,9 @@ class blocking():
     def __init__(self):
         self.__hosts = Hosts()
 
+        ##TO_DO
+        self.__scheduler = None
+
     def __fix_url(self, url):
         """
         Fix the url by removing any http or www leaving just 
