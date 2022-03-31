@@ -21,6 +21,12 @@ class hosts:
     ip_redirect = '127.0.0.1'
 
     def __init__(self):
+        # Setup config variables to be editable from external using
+        # defaults of hosts
+        self.entry_header = hosts.header
+        self.entry_footer = hosts.footer
+        self.redirect_ip_addr = hosts.ip_redirect
+
         # Paths of the files on this system        
         self.__hosts_filepath = hosts.path[self.__get_os()]
         self.__hosts_backup_filepath = self.__hosts_filepath + '.bmb'
@@ -106,10 +112,8 @@ class hosts:
             output.append('#\n')
             # Loop through the blocked address list and create string to append to the list
             for addr in self.__blocked_hosts:
-                print(addr)
-                line = hosts.ip_redirect + '    ' + addr + '\n'
+                line = hosts.ip_redirect + ' ' + addr + '\n'
                 output.append(line)
-                print(line)
             output.append('#\n')
             output.append(hosts.footer + '\n')
             output.append('##\n')
@@ -117,6 +121,44 @@ class hosts:
             raise
 
         return output
+
+    def __get_curent_blocked_in_hosts_file(self):
+        """
+        Returns a list of what is currently blocked from the hosts file by
+        this. Only includes what is between the header and footer
+        """
+
+        # Loop through the system hosts
+        inside_added = False # Have we found what we are looking for
+        added_hosts = [] # List of what we have added
+        for line in self.__read_current_hosts():
+
+            # strip new line characters otherwise comparison will fail
+            if line.strip('#').strip('\n') == hosts.header.strip('#').strip('\n'):
+                inside_added = True
+                continue
+            
+            # If were inside the header, check this isn't the footer
+            if inside_added and line == self.entry_footer:
+                # No need to keep looking
+                inside_added = False
+                break
+
+            # Ignore any commented line
+            if inside_added and line[0] == '#':
+                continue
+            
+            # Read the line
+            if inside_added:
+                # Split the line into its parts
+                parts = line.split(' ')
+                # Part 2 would be the domain
+                added_hosts.append(parts[1].strip('\n'))
+                continue
+
+        return added_hosts
+
+
 
     ### Public API
 
@@ -176,4 +218,11 @@ class hosts:
         """
         backup = self.__read_backup_hosts()
         self.__write_file(self.__hosts_filepath, backup)
+
+    def query(self):
+        """
+        Return a list of currently blocked hosts that have been installed
+        by this system between the header and the footer
+        """
+        return self.__get_curent_blocked_in_hosts_file()
         
