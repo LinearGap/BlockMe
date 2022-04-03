@@ -10,42 +10,13 @@ import time
 
 if __name__ == '__main__':
     def main():
-        blocker = blocking()
-        blocker.add_site('www.google.co.uk')
-        blocker.add_site('www.nexus.net')
-        blocker.add_site('http://block.me')
-        blocker.add_site('https://www.net.web')
-        blocker.set_redirect_address('1.1.1.1')
-        blocker.activate()
-        print(blocker.query_installed())
-        blocker.disactivate()
-        c = config()
-        c.load()
-        c.permanent_urls = []
-        c.scheduled_urls = []
-        c.save()
-
-        time_tuple = time_to_tuple("23:01")
-        now = time.localtime(time.time())
-
-        hours_diff = time_tuple[0] - now.tm_hour
-        mins_diff = time_tuple[1] - now.tm_min
-
-        print(f'h{hours_diff}: m{mins_diff}')
-
-        seconds = ((hours_diff * 60) * 60) + (mins_diff * 60)    
-        print(f's{seconds}')
-
-        """
+        
         cwd = os.getcwd()
-        path = cwd + '/BlockMe/scheduler.py'
+        path = cwd + '/BlockMe/background_process.py'
         pr = subprocess.Popen(['python', path])
         print(pr.pid)
         print(psutil.Process(pr.pid))
-        time.sleep(15)
-        psutil.Process(pr.pid).kill()
-        print(time.localtime(time.time()))
-        """
+        
         return 0
 
 

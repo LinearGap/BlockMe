@@ -27,16 +27,17 @@ class scheduler_process():
         self.__perform_setup()
 
         # Setup scheduler
-        self.__scheduler = sched.scheduler(time.time, time.delay)
+        self.__scheduler = sched.scheduler(time.time, time.sleep)
 
         # Print message to show fully running
-        print("BlockMe background process running.")
+        #print("BlockMe background process running.")
 
         self.__events = [] # List of events
-        # Run the main loop
-        self.__main_loop()
 
-    def __perform_setup():
+        self.stop_signal = False
+        self.midnight = False
+
+    def __perform_setup(self):
         """
         Perform any setup actions for the scheduler to be running
         """
@@ -46,7 +47,17 @@ class scheduler_process():
         """
         The loop that keeps the scheduler running
         """
-        pass
+        #while not self.stop_signal:
+        self.midnight = False
+        self.__add_events()
+        self.__add_master_event()
+        self.__scheduler.run(blocking=False)
+
+        while not self.midnight:
+            # Sleep for a minute then check again if anything needs to happen
+            time.sleep(10)
+            self.__scheduler.run(blocking=False)
+
 
     def __add_events(self):
         """
@@ -55,19 +66,32 @@ class scheduler_process():
         for scheduled in self.__conf.scheduled_urls:
             
             # Has the end time already passed?
-            if self.__is_strtime_passed(scheduled.end_time):
-                self.__remove_block_now(scheduled.url)
+            if self.__is_strtime_passed(scheduled['end_time']):
+                self.__remove_block_now(scheduled['url'])
                 continue
 
             # Has start time already passed?
-            elif self.__is_strtime_passed(scheduled.start_time):
-                self.__add_block_now(scheduled.url)
-                self.__add_end_event(scheduled.end_time, scheduled.url)
+            elif self.__is_strtime_passed(scheduled['start_time']):
+                self.__add_block_now(scheduled['url'])
+                self.__add_end_event(scheduled['end_time'], scheduled['url'])
 
             # Add event to the scheduler with this url and start and end times
             else:
-                self.__add_start_event(scheduled.start_time, scheduled.url)
-                self.__add_end_event(scheduled.end_time, scheduled.url)
+                self.__add_start_event(scheduled['start_time'], scheduled['url'])
+                self.__add_end_event(scheduled['end_time'], scheduled['url'])
+
+    def __add_master_event(self):
+        """
+        Adds an event for midnight that clears all running events and
+        starts the daily process again.
+        """
+        now = time.localtime(time.time())
+
+        midnight = (24, 0)
+        secs_until = self.__get_seconds_until(midnight)
+        e_id = self.__scheduler.enterabs(time.time() + secs_until, 1, scheduler_process.__midnight_reset, argument=(self))
+        self.__events.append(e_id)
+
 
     def time_to_tuple(self, strtime):
         """
@@ -84,7 +108,7 @@ class scheduler_process():
         """
         Check if string in format "HH:MM" has already passed for today
         """
-        time_tuple = self.time_to_tuple(time)
+        time_tuple = self.time_to_tuple(strtime)
         hour = time_tuple[0]
         minutes = time_tuple[1]
 
@@ -107,16 +131,19 @@ class scheduler_process():
         Adds a blocked site to the blocked system straight away. Used when
         the time for start has already passed
         """
-        pass
+        self.__blocker.add_site(url)
+        self.__blocker.reactivate()
 
     def __remove_block_now(self, url):
         """
         Removes a blocked site from the blocked system straight away. Used when end
         time has aldready passed.
         """
-        pass
+        self.__blocker.remove_site(url)
+        # Activate the blocker to reset what is currently being blocked
+        self.__blocker.reactivate()
 
-    def __get_seconds_until(time_until):
+    def __get_seconds_until(self, time_until):
         """
         Get the time in seconds between now and then
         time_until = (hours, minutes)
@@ -128,22 +155,53 @@ class scheduler_process():
 
         return seconds
 
-    def __add_start_event(self, time, url):
+    def __add_start_event(self, time_at, url):
         """
         Add an event for the specified time and url. For starting blocks
         """
-        time_tuple = self.time_to_tuple(time)
+        time_tuple = self.time_to_tuple(time_at)
         secs_until = self.__get_seconds_until(time_tuple)
 
         e_id = self.__scheduler.enterabs(time.time() + secs_until, 3, scheduler_process.__add_block_now, argument=(self, url))
         self.__events.append(e_id)
 
-    def __add_end_event(self, time, url):
+    def __add_end_event(self, time_at, url):
         """
         Add an event for the specified time and url. For ending blocks
         """
-        time_tuple = self.time_to_tuple(time)
+        time_tuple = self.time_to_tuple(time_at)
         secs_until = self.__get_seconds_until(time_tuple)
 
         e_id = self.__scheduler.enterabs(time.time() + secs_until, 3, scheduler_process.__remove_block_now, argument=(self, url))
         self.__events.append(e_id)
+
+    def __midnight_reset(self):
+        """
+        Clear all events ready for the day to begin again
+        """
+        for e in self.__events:
+            try:
+                self.__scheduler.cancel(e)
+            except:
+                pass
+
+        self.__events.clear()
+        self.midnight = True
+
+
+# Public API
+
+    def start(self):
+        """
+        Start the scheduler process and loops
+        """
+        # Run the main loop
+        while not self.stop_signal:
+            self.__main_loop()
+
+    def stop(self):
+        """
+        Stop the scheduler process immediately
+        """
+        self.__midnight_reset()
+        self.stop_signal = True

@@ -9,9 +9,6 @@ class blocking():
     def __init__(self):
         self.__hosts = Hosts()
 
-        ##TO_DO
-        self.__scheduler = None
-
     def __fix_url(self, url):
         """
         Fix the url by removing any http or www leaving just 
@@ -73,8 +70,6 @@ class blocking():
         # Add the url to the hosts system
         self.__hosts.add(url)
 
-        # Add the url to the config file
-        ## TO_DO
 
     def remove_site(self, site_url):
         """
@@ -87,33 +82,34 @@ class blocking():
         # Remove the url form the hosts system
         self.__hosts.remove(url)
 
-        # Remove the url from the config file
-        ## TO_DO
 
     def activate(self):
         """
-        Activate the blocker with any permanent entries added to the hosts system.
-        Also start the scheduler system to add and remove scheduled blocks at the right
-        time.
+        Active any currently added blocks on the system
         """
 
         # Save the current hosts lists, which also activates the 
         # hosts file on the system
         self.__hosts.save()
 
-        # Activate the scheduler
+    def reactivate(self):
+        """
+        Reactive the blocks in the hosts system to update for added or removed url
+        """
+
+        # Save the current hosts lists, which also activates the 
+        # hosts file on the system
+        self.__hosts.save()
 
     def disactivate(self):
         """
         Disactivate the blocker, removing all blocks including anything that has been 
-        scheduled by the scheduling system. Cancel all scheduled blocks in the 
-        scheduler system.
+        scheduled by the scheduling system.
         """
 
         # Restore the hosts file to undo anyhting that has been applied to it
         self.__hosts.restore()
 
-        # Disactive the scheduler
 
     def query_installed(self):
         """
@@ -130,9 +126,8 @@ class blocking():
         if self.__check_valid_ip(addr):
             self.__set_redirect_addr(addr)
 
-    ## TO_DO
-    def query_scheduled(self):
+    def restore_default(self):
         """
-        Returns a list of scheduled blocks and the times they are active
+        Restore to the system default hosts 
         """
-        pass
+        self.__hosts.restore()

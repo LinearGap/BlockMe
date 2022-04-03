@@ -35,11 +35,8 @@ class hosts:
         # List of sites to block when writing the hosts file
         self.__blocked_hosts = []
 
-        # Read the current hosts file and save into backup file and
-        # also into system_hosts for use later
+        # Read the current hosts file
         self.__system_hosts = self.__read_current_hosts()
-        self.__write_backup_hosts(self.__system_hosts)
-
     def __get_os(self):
         """
         Get the name of the current system OS
